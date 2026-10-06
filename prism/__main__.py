@@ -11,6 +11,7 @@ from pathlib import Path
 from tradingagents.default_config import DEFAULT_CONFIG
 
 from .runner import run_prism_m1
+from .outcome import resolve_d1_outcome
 
 
 def main(argv=None) -> int:
@@ -37,11 +38,21 @@ def main(argv=None) -> int:
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     # State contains LangChain objects and is intentionally excluded from the portable result.
+    outcome = None
+    if prediction["decision"] == "BUY":
+        try:
+            outcome = resolve_d1_outcome(
+                args.ticker.upper(), args.date, prediction["capital_krw"], config
+            ).as_dict()
+        except Exception as exc:
+            outcome = {"status": "unavailable", "reason": str(exc)}
+
     portable = {
         "ticker": args.ticker.upper(),
         "analysis_date": args.date,
         "tradingagents_signal": result["tradingagents_signal"],
         "prism_prediction": prediction,
+        "d1_outcome": outcome,
     }
     output.write_text(json.dumps(portable, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -55,6 +66,11 @@ def main(argv=None) -> int:
     print(f"Capital / trade      : KRW {prediction['capital_krw']:,}")
     print(f"Exit rule            : {prediction['exit_rule']}")
     print(f"Frozen prediction    : {prediction['prediction_id']}")
+    if outcome and "raw_return" in outcome:
+        print(f"D+1 return           : {outcome['raw_return']:+.2%}")
+        print(f"D+1 alpha            : {outcome['alpha_return']:+.2%}")
+        print(f"P&L                  : KRW {outcome['pnl_krw']:+,}")
+        print(f"Outcome              : {outcome['result']}")
     print(f"Portable result      : {output}")
     print("=" * 60)
     return 0
