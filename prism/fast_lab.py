@@ -42,29 +42,37 @@ def build_features(df):
     x["range20_hi"]=c/c.rolling(20).max()
     return x
 
-def score_row(r):
-    # Reward pre-move compression + improving participation + controlled acceleration.
+FEATURES=["compression","volume_anomaly","volume_accel","acceleration","breakout_proximity","trend_quality","exhaustion_penalty"]
+
+def feature_parts(r):
     compression=_clip(110-70*r["compression"])
     volume_anomaly=_clip(35+35*min(max(r["rvol20"],0),2.2))
     volume_accel=_clip(50+60*(r["vol_accel"]-1))
     acceleration=_clip(50+700*r["accel"])
     breakout_proximity=_clip(100-500*abs(1-r["range20_hi"]))
     trend_quality=_clip(50+350*r["dist_ma60"])
-    # Explicitly penalize post-spike/overextended states.
     exhaustion=_clip(max(0,r["ret1"]-.035)*1200 + max(0,r["ret5"]-.09)*500 + max(0,r["dist_ma20"]-.10)*350)
-    parts={"compression":compression,"volume_anomaly":volume_anomaly,"volume_accel":volume_accel,
-           "acceleration":acceleration,"breakout_proximity":breakout_proximity,
-           "trend_quality":trend_quality,"exhaustion_penalty":exhaustion}
-    raw=(.18*compression+.16*volume_anomaly+.12*volume_accel+.18*acceleration+
-         .14*breakout_proximity+.12*trend_quality+.10*(100-exhaustion))
+    return {"compression":compression,"volume_anomaly":volume_anomaly,"volume_accel":volume_accel,
+            "acceleration":acceleration,"breakout_proximity":breakout_proximity,
+            "trend_quality":trend_quality,"exhaustion_penalty":exhaustion}
+
+def score_row(r,weights=None):
+    parts=feature_parts(r)
+    if weights is None:
+        weights={"compression":.18,"volume_anomaly":.16,"volume_accel":.12,"acceleration":.18,
+                 "breakout_proximity":.14,"trend_quality":.12,"exhaustion_penalty":-.10}
+        intercept=10.0
+    else:
+        intercept=weights.get("_intercept",50.0)
+    raw=intercept+sum(weights.get(k,0)*parts[k] for k in FEATURES)
     return round(_clip(raw),2),{k:round(float(v),3) for k,v in parts.items()}
 
-def backtest_ticker(ticker,start,end,threshold=70.,capital_krw=10_000_000):
+def backtest_ticker(ticker,start,end,threshold=70.,capital_krw=10_000_000,weights=None):
     df=build_features(load_history(ticker,start,end)).dropna(); a,b=pd.Timestamp(start),pd.Timestamp(end); out=[]
     for i in range(len(df)-1):
         date=df.index[i].tz_localize(None) if getattr(df.index[i],"tzinfo",None) else df.index[i]
         if date<a or date>b: continue
-        score,features=score_row(df.iloc[i])
+        score,features=score_row(df.iloc[i],weights)
         if score<threshold: continue
         entry=float(df.iloc[i].Close); exit_=float(df.iloc[i+1].Close); ret=exit_/entry-1
         out.append(FastSignal(ticker,date.strftime("%Y-%m-%d"),score,"BUY",entry,exit_,ret,round(capital_krw*ret),features))
