@@ -1,0 +1,50 @@
+name: PRISM LAB FAST
+
+on:
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: "Comma-separated tickers"
+        required: true
+        default: "NVDA"
+        type: string
+      start_date:
+        description: "Start YYYY-MM-DD"
+        required: true
+        default: "2026-01-01"
+        type: string
+      end_date:
+        description: "End YYYY-MM-DD"
+        required: true
+        default: "2026-10-06"
+        type: string
+      threshold:
+        description: "PRISM threshold"
+        required: true
+        default: "70"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  fast-backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install
+        run: pip install .
+      - name: Run zero-LLM backtest
+        run: |
+          python -m prism.fast_cli "${{ inputs.tickers }}" --start "${{ inputs.start_date }}" --end "${{ inputs.end_date }}" --threshold "${{ inputs.threshold }}" --output results/prism-fast/report.html
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-fast-${{ inputs.start_date }}-${{ inputs.end_date }}
+          path: results/prism-fast/
+          retention-days: 30
