@@ -1,0 +1,44 @@
+name: PRISM FAST v4 RISK GATE
+on:
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: "30-stock universe"
+        required: true
+        default: "NVDA,AAPL,MSFT,AMZN,GOOGL,META,AVGO,TSLA,NFLX,AMD,ORCL,PLTR,CSCO,IBM,INTC,QCOM,TXN,AMAT,LRCX,MU,ARM,CRWD,PANW,ADBE,NOW,SHOP,UBER,ABNB,COIN,HOOD"
+      max_down:
+        description: "Maximum modeled P(-3%) after balanced training"
+        required: true
+        default: "0.45"
+      min_up:
+        description: "Minimum modeled P(+3%) after balanced training"
+        required: true
+        default: "0.50"
+permissions:
+  contents: read
+jobs:
+  risk-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install
+        run: |
+          pip install .
+          pip install scikit-learn
+      - name: Run v4
+        run: python -m prism.risk_cli "${{ inputs.tickers }}" --max-down "${{ inputs.max_down }}" --min-up "${{ inputs.min_up }}"
+      - name: Verify
+        run: |
+          test -s results/prism-v4/report.json
+          test -s results/prism-v4/risk_gate.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prism-fast-v4-risk-gate
+          path: results/prism-v4/
