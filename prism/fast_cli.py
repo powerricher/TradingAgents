@@ -16,3 +16,7 @@ def main(argv=None):
     s=write_report(signals,a.output)
     print(f"PRISM LAB FAST: trades={s['trades']} win_rate={s['win_rate']} avg_return={s['avg_return']} net_pnl_krw={s['net_pnl_krw']}")
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
