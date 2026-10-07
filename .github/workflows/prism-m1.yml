@@ -36,7 +36,7 @@ jobs:
           cache: "pip"
 
       - name: Install TradingAgents + PRISM
-        run: pip install .
+        run: pip install ".[dev]"
 
       - name: Verify PRISM unit tests
         run: python -m pytest tests/test_prism_m1.py tests/test_prism_pipeline.py
