@@ -63,7 +63,7 @@ def run(tickers,top_pct,out):
        "selection":"v4 risk gate then daily top opportunity percentile; opportunity > 0",
        "top_pct":float(top_pct),"folds":fold_meta,"pooled_selected":stats(pooled)}
  path=Path(out);path.parent.mkdir(parents=True,exist_ok=True)
- path.with_suffix(".json").write_text(json.dumps({"meta":meta,"selected_rows":pooled.to_dict("records")},indent=2),encoding="utf-8")
+ path.with_suffix(".json").write_text(json.dumps({"meta":meta,"selected_rows":pooled.to_dict("records")},indent=2,default=str),encoding="utf-8")
  path.with_name("rolling_summary.json").write_text(json.dumps(meta,indent=2),encoding="utf-8")
  rows="".join(f"<tr><td>{x['fold']}</td><td>{x['test'][0]}→{x['test'][1]}</td><td>{x['selected'].get('n',0)}</td><td>{x['selected'].get('avg_return',0):.2%}</td><td>{x['selected'].get('profit_factor') or 0:.2f}</td><td>{x['selected'].get('minus3_rate',0):.1%}</td><td>{x['down_auc'] or 0:.3f}</td></tr>" for x in fold_meta)
  s=meta["pooled_selected"]
