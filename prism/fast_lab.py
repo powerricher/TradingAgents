@@ -35,8 +35,8 @@ def build_features(df):
     x["vol5"]=x.ret1.rolling(5).std(); x["vol20"]=x.ret1.rolling(20).std()
     x["compression"]=x.vol5/x.vol20
     x["rvol20"]=v/v.rolling(20).mean()
-    x["vol_accel"]=x.rvol20/x.rvol20.shift(3).rolling(3).mean()
-    x["accel"]=x.ret3-(x.ret20/20*3)
+    x["vol_accel"]=x["rvol20"]/x["rvol20"].shift(3).rolling(3).mean()
+    x["accel"]=x["ret3"]-(x["ret20"]/20*3)
     x["rsi14"]=_rsi(c)
     x["dist_ma20"]=c/x.ma20-1; x["dist_ma60"]=c/x.ma60-1
     x["range20_hi"]=c/c.rolling(20).max()
