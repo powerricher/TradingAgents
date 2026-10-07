@@ -42,6 +42,12 @@ jobs:
       - name: Run zero-LLM backtest
         run: |
           python -m prism.fast_cli "${{ inputs.tickers }}" --start "${{ inputs.start_date }}" --end "${{ inputs.end_date }}" --threshold "${{ inputs.threshold }}" --output results/prism-fast/report.html
+      - name: Verify report exists
+        run: |
+          test -s results/prism-fast/report.html
+          test -s results/prism-fast/report.json
+          ls -lh results/prism-fast/
+
       - name: Upload report
         uses: actions/upload-artifact@v4
         with:
