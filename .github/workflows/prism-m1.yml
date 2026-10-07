@@ -1,0 +1,66 @@
+name: PRISM M1 Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      ticker:
+        description: "Ticker (e.g. NVDA)"
+        required: true
+        default: "NVDA"
+        type: string
+      analysis_date:
+        description: "Historical analysis date (YYYY-MM-DD)"
+        required: true
+        default: "2026-01-05"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  prism:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
+
+    steps:
+      - name: Checkout prism-m1
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install TradingAgents + PRISM
+        run: pip install .
+
+      - name: Verify PRISM unit tests
+        run: python -m pytest tests/test_prism_m1.py tests/test_prism_pipeline.py
+        continue-on-error: false
+
+      - name: Run PRISM
+        run: |
+          mkdir -p results/prism-run
+          python -m prism "${{ inputs.ticker }}" "${{ inputs.analysis_date }}" \
+            --output results/prism-run/prism_result.json
+
+      - name: Collect frozen prediction
+        if: always()
+        run: |
+          mkdir -p results/prism-run/frozen
+          if [ -d "$HOME/.tradingagents/logs/prism/frozen" ]; then
+            cp -r "$HOME/.tradingagents/logs/prism/frozen/." results/prism-run/frozen/ || true
+          fi
+
+      - name: Upload PRISM result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-${{ inputs.ticker }}-${{ inputs.analysis_date }}
+          path: results/prism-run/
+          if-no-files-found: warn
+          retention-days: 30
