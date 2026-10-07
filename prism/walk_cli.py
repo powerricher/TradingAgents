@@ -9,7 +9,7 @@ def main(argv=None):
     p.add_argument("--train-end",default="2026-06-30")
     p.add_argument("--val-start",default="2026-07-01")
     p.add_argument("--val-end",default="2026-10-06")
-    p.add_argument("--threshold",type=float,default=50.0)
+    p.add_argument("--threshold",type=float,default=0.15)
     p.add_argument("--output",default="results/prism-walk/report.html")
     a=p.parse_args(argv)
     tickers=[x.strip().upper() for x in a.tickers.split(",") if x.strip()]
