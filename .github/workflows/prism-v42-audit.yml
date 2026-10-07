@@ -13,7 +13,7 @@ jobs:
         run: pip install pandas numpy scikit-learn yfinance
       - name: Reproduce frozen v4.2 and audit
         run: |
-          python -m prism.rolling_v42_cli --tickers NVDA AAPL MSFT AMZN GOOGL META AVGO TSLA NFLX AMD ORCL PLTR CSCO IBM INTC QCOM TXN AMAT LRCX MU ARM CRWD PANW ADBE NOW SHOP UBER ABNB COIN HOOD --top-pct 0.10 --output results/prism-v42/report.html --uncertainty-penalty 0.35
+          python -m prism.rolling_v42_cli "NVDA,AAPL,MSFT,AMZN,GOOGL,META,AVGO,TSLA,NFLX,AMD,ORCL,PLTR,CSCO,IBM,INTC,QCOM,TXN,AMAT,LRCX,MU,ARM,CRWD,PANW,ADBE,NOW,SHOP,UBER,ABNB,COIN,HOOD" --top-pct 0.10 --output results/prism-v42/report.html --uncertainty-penalty 0.35
           python -m prism.audit_v42_cli --source results/prism-v42/report.json --output results/prism-v42-audit/report.html
       - name: Upload audit
         uses: actions/upload-artifact@v4
