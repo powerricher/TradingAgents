@@ -1,0 +1,45 @@
+name: PRISM FAST v4.2 REGIME EDGE
+on:
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: "Frozen 30-stock universe"
+        required: true
+        default: "NVDA,AAPL,MSFT,AMZN,GOOGL,META,AVGO,TSLA,NFLX,AMD,ORCL,PLTR,CSCO,IBM,INTC,QCOM,TXN,AMAT,LRCX,MU,ARM,CRWD,PANW,ADBE,NOW,SHOP,UBER,ABNB,COIN,HOOD"
+      top_pct:
+        description: "Daily fraction after frozen tail-risk gate"
+        required: true
+        default: "0.10"
+      uncertainty_penalty:
+        description: "Pre-registered uncertainty penalty"
+        required: true
+        default: "0.35"
+permissions:
+  contents: read
+jobs:
+  rolling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install
+        run: |
+          pip install .
+          pip install scikit-learn
+      - name: Run v4.2 rolling walk-forward
+        run: python -m prism.rolling_v42_cli "${{ inputs.tickers }}" --top-pct "${{ inputs.top_pct }}" --uncertainty-penalty "${{ inputs.uncertainty_penalty }}"
+      - name: Verify
+        run: |
+          test -s results/prism-v42/report.html
+          test -s results/prism-v42/report.json
+          test -s results/prism-v42/rolling_summary.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prism-fast-v42-regime-edge
+          path: results/prism-v42/
