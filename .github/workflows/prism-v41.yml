@@ -1,0 +1,40 @@
+name: PRISM FAST v4.1 ROLLING
+on:
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: "Frozen 30-stock universe"
+        required: true
+        default: "NVDA,AAPL,MSFT,AMZN,GOOGL,META,AVGO,TSLA,NFLX,AMD,ORCL,PLTR,CSCO,IBM,INTC,QCOM,TXN,AMAT,LRCX,MU,ARM,CRWD,PANW,ADBE,NOW,SHOP,UBER,ABNB,COIN,HOOD"
+      top_pct:
+        description: "Daily opportunity fraction after Risk Gate"
+        required: true
+        default: "0.10"
+permissions:
+  contents: read
+jobs:
+  rolling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install
+        run: |
+          pip install .
+          pip install scikit-learn
+      - name: Run rolling walk-forward
+        run: python -m prism.rolling_cli "${{ inputs.tickers }}" --top-pct "${{ inputs.top_pct }}"
+      - name: Verify
+        run: |
+          test -s results/prism-v41/report.json
+          test -s results/prism-v41/rolling_summary.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prism-fast-v41-rolling
+          path: results/prism-v41/
