@@ -1,0 +1,44 @@
+name: PRISM WALK-FORWARD
+
+on:
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: "Comma-separated tickers"
+        required: true
+        default: "NVDA,AAPL,MSFT,AMZN,GOOGL,META,AVGO,TSLA,NFLX,AMD"
+      threshold:
+        description: "Calibrated score threshold"
+        required: true
+        default: "50"
+
+permissions:
+  contents: read
+jobs:
+  walk-forward:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install
+        run: |
+          pip install .
+          pip install scikit-learn
+      - name: Train Jan-Jun and validate Jul-Oct
+        run: |
+          python -m prism.walk_cli "${{ inputs.tickers }}" --threshold "${{ inputs.threshold }}"
+      - name: Verify
+        run: |
+          test -s results/prism-walk/report.json
+          test -s results/prism-walk/calibration.json
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-walk-forward
+          path: results/prism-walk/
