@@ -1,0 +1,40 @@
+name: PRISM FAST v3 ASYMMETRY
+on:
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: "Comma-separated tickers"
+        required: true
+        default: "NVDA,AAPL,MSFT,AMZN,GOOGL,META,AVGO,TSLA,NFLX,AMD,ORCL,PLTR,CSCO,IBM,INTC,QCOM,TXN,AMAT,LRCX,MU,ARM,CRWD,PANW,ADBE,NOW,SHOP,UBER,ABNB,COIN,HOOD"
+      min_edge:
+        description: "Minimum asymmetry edge"
+        required: true
+        default: "0.05"
+permissions:
+  contents: read
+jobs:
+  asymmetry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install
+        run: |
+          pip install .
+          pip install scikit-learn
+      - name: Run v3
+        run: python -m prism.asym_cli "${{ inputs.tickers }}" --min-edge "${{ inputs.min_edge }}"
+      - name: Verify
+        run: |
+          test -s results/prism-v3/report.json
+          test -s results/prism-v3/asymmetry.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prism-fast-v3-asymmetry
+          path: results/prism-v3/
