@@ -8,9 +8,9 @@ on:
         required: true
         default: "NVDA,AAPL,MSFT,AMZN,GOOGL,META,AVGO,TSLA,NFLX,AMD"
       threshold:
-        description: "Calibrated score threshold"
+        description: "Minimum P(D+1 >= +3%), e.g. 0.15"
         required: true
-        default: "50"
+        default: "0.15"
 
 permissions:
   contents: read
