@@ -45,7 +45,7 @@ def _XR(df):
  return df[BASE_COLS+REGIME_COLS].replace([np.inf,-np.inf],np.nan).fillna(0).astype(float)
 
 def _regressor():
- return HistGradientBoostingRegressor(loss="huber",learning_rate=.045,max_iter=180,max_leaf_nodes=15,
+ return HistGradientBoostingRegressor(loss="absolute_error",learning_rate=.045,max_iter=180,max_leaf_nodes=15,
                                       l2_regularization=2.0,min_samples_leaf=45,random_state=42)
 
 def run(tickers,top_pct,out,uncertainty_penalty=.35):
