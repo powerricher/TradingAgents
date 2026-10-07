@@ -26,8 +26,21 @@ def _auc(y,p):
  return float(roc_auc_score(y,p)) if len(np.unique(y))>1 else None
 def run(tickers,top_pct,out):
  all_selected=[]; fold_meta=[]
+ # Download/build the full point-in-time feature panel ONCE. Repeated Yahoo
+ # downloads per fold caused rate-limit/empty-history failures.
+ print("Preparing one cached 2021-2026 feature panel...")
+ panel=_prep(tickers,"2021-01-01","2026-10-06")
+ if panel.empty:
+  raise RuntimeError("Feature panel is empty")
+ panel["_date"]=pd.to_datetime(panel["date"])
+ print(f"Panel ready: {len(panel):,} rows, {panel.ticker.nunique()} tickers")
  for j,(a,b,c,d) in enumerate(FOLDS,1):
-  tr=_prep(tickers,a,b);te=_prep(tickers,c,d)
+  print(f"Fold {j}: train {a}..{b} | test {c}..{d}")
+  tr=panel[(panel._date>=pd.Timestamp(a))&(panel._date<=pd.Timestamp(b))].copy()
+  te=panel[(panel._date>=pd.Timestamp(c))&(panel._date<=pd.Timestamp(d))].copy()
+  if tr.empty or te.empty:
+   raise RuntimeError(f"Fold {j} has empty train/test: train={len(tr)}, test={len(te)}")
+  print(f"Fold {j}: train_n={len(tr):,}, test_n={len(te):,}")
   up=LogisticRegression(max_iter=4000,class_weight="balanced").fit(_X(tr),tr.up)
   dn=LogisticRegression(max_iter=4000,class_weight="balanced").fit(_X(tr),tr.down)
   te=te.copy();te["p_up"]=up.predict_proba(_X(te))[:,1];te["p_down"]=dn.predict_proba(_X(te))[:,1]
