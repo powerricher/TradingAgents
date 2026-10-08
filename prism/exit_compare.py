@@ -9,8 +9,8 @@ def exit_trade(df,idx,mode,max_days=10):
  entry=float(df.iloc[idx]["Close"]); previous=entry; peak=entry
  for j in range(idx+1,min(idx+max_days+1,len(df))):
   r=df.iloc[j]; o,h,l,c=[float(r[k]) for k in ("Open","High","Low","Close")]
-  if o<=previous*.99: return j,o,"gap_open"
   if mode=="A":return j,c,"next_close"
+  if o<=previous*.99: return j,o,"gap_open"
   if mode=="B":
    if c<o:return j,c,"red_candle"
   if mode=="C":
