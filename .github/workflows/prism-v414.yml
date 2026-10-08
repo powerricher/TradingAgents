@@ -1,0 +1,39 @@
+name: PRISM v4.14 80 Stock Portfolio Replay
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/replay_v414.py'
+      - '.github/workflows/prism-v414.yml'
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Generate 80-stock entry variants
+        run: python -m prism.entry_v413
+      - name: Replay all variants using identical MA30 exit
+        run: python -m prism.replay_v414
+      - name: Diagnostic artifact
+        if: always()
+        run: |
+          mkdir -p results/prism-v414
+          test -f results/prism-v414/summary.json || echo '{"status":"FAILED","see":"workflow logs"}' > results/prism-v414/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v414-80stock-portfolio
+          path: |
+            results/prism-v413/
+            results/prism-v414/
+          if-no-files-found: error
