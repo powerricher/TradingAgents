@@ -1,0 +1,40 @@
+name: PRISM v4.5 Tech-Only Auto Research
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/universe_v45.py'
+      - 'prism/v45_cli.py'
+      - 'prism/execution_v45.py'
+      - '.github/workflows/prism-v45.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Train rolling baseline on tech-only universe
+        run: python -m prism.v45_cli
+      - name: Execution-corrected replay
+        run: python -m prism.execution_v45
+      - name: Diagnostic
+        if: always()
+        run: |
+          mkdir -p results/prism-v45-execution
+          test -f results/prism-v45-execution/summary.json || echo '{"status":"incomplete","check":"workflow logs"}' > results/prism-v45-execution/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v45-tech-only-execution
+          path: |
+            results/prism-v45/
+            results/prism-v45-execution/
