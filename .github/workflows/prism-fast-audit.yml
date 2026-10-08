@@ -1,0 +1,42 @@
+name: PRISM Fast Audit (No Rolling)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install audit dependencies
+        run: pip install pandas numpy
+      - name: Retrieve frozen 50-stock artifact (no retraining)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p frozen
+          gh run download 37714081244 --repo ${{ github.repository }} -n prism-v43-50-stock-research -D frozen
+          find frozen -type f
+      - name: Run fast exit and sector audit
+        run: |
+          TRADES=$(find frozen -name trades.csv | head -1)
+          SIGNALS=$(find frozen -name report.json | head -1)
+          test -n "$TRADES" && test -n "$SIGNALS"
+          python -m prism.fast_audit --trades "$TRADES" --signals "$SIGNALS"
+      - name: Upload results or diagnostic
+        if: always()
+        run: |
+          mkdir -p results/prism-v44-fast
+          test -f results/prism-v44-fast/summary.json || echo '{"status":"incomplete","note":"See workflow logs"}' > results/prism-v44-fast/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-fast-audit
+          path: results/prism-v44-fast/
