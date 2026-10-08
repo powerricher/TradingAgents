@@ -1,0 +1,12 @@
+"""PRISM research universe v4.5. Frozen list, not a historical point-in-time universe."""
+GROUPS={
+"AI_PLATFORM":"NVDA MSFT AMZN GOOGL META ORCL PLTR".split(),
+"SEMICONDUCTOR":"AVGO AMD INTC QCOM TXN MU ARM MRVL ALAB CRDO AXTI INDI".split(),
+"SEMI_EQUIPMENT":"AMAT LRCX KLAC ASML ENTG".split(),
+"OPTICAL_NETWORK":"ANET CIEN LITE COHR SMTC CSCO".split(),
+"DATACENTER_POWER":"VRT ETN DELL HPE".split(),
+"SOFTWARE_SECURITY":"CRWD PANW ADBE NOW NET DDOG SNOW APP ZS FTNT".split(),
+"TECH_GROWTH":"TSLA NFLX SHOP UBER COIN HOOD".split(),
+}
+UNIVERSE=[t for group in GROUPS.values() for t in group]
+assert len(UNIVERSE)==50 and len(set(UNIVERSE))==50,(len(UNIVERSE),len(set(UNIVERSE)))
