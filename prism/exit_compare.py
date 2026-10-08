@@ -16,7 +16,9 @@ def exit_trade(df,idx,mode,max_days=10):
   if mode=="C":
    ma5=float(df["Close"].iloc[max(0,j-4):j+1].mean())
    # End-of-day trailing logic only; no impossible same-bar stop fill.
-   if c<ma5 or c<peak*.95:return j,c,"trend_break"
+   if c<ma5 or c<peak*.95:
+    if j+1<len(df): return j+1,float(df.iloc[j+1]["Open"]),"trend_break_next_open"
+    return None,None,"unresolved_next_open"
   peak=max(peak,h);previous=c
   if j==idx+max_days:return j,c,"time_exit"
  return None,None,"no_future_bar"
