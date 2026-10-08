@@ -37,12 +37,14 @@ def main():
  p=argparse.ArgumentParser();p.add_argument("--scored",default="results/prism-v417/scored_signals.csv");p.add_argument("--out",default="results/prism-v419");a=p.parse_args()
  out=Path(a.out);out.mkdir(parents=True,exist_ok=True)
  df=pd.read_csv(a.scored)
- df["date"]=pd.to_datetime(df.date);df["exit_date"]=pd.to_datetime(df.exit_date)
+ df["date"]=pd.to_datetime(df.date).dt.normalize();df["exit_date"]=pd.to_datetime(df.exit_date)
  prices={};features=[];issues=[]
  for ticker,g in df.groupby("ticker"):
   try:
    d=load_prices(ticker,g.date.min());prices[ticker]=d
-   f=feature_frame(d).reset_index().rename(columns={"index":"date"})
+   f=feature_frame(d).reset_index()
+   f=f.rename(columns={f.columns[0]:"date"})
+   f["date"]=pd.to_datetime(f["date"]).dt.tz_localize(None).dt.normalize()
    f["ticker"]=ticker
    features.append(f)
   except Exception as exc:issues.append({"ticker":ticker,"error":str(exc)})
