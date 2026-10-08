@@ -32,7 +32,7 @@ def main():
 
  if panel.empty:raise RuntimeError("Empty price panel")
  panel["_date"]=pd.to_datetime(panel.date)
- output=[];diagnostics=[]
+ output=[];diagnostics=[];candidate_rows=[]
  for j,(a0,b,c,d) in enumerate(FOLDS,1):
   train=panel[(panel._date>=pd.Timestamp(a0))&(panel._date<=pd.Timestamp(b))].copy()
   test=panel[(panel._date>=pd.Timestamp(c))&(panel._date<=pd.Timestamp(d))].copy()
@@ -55,6 +55,8 @@ def main():
   test["quality_pass"]=(test.rel5>0)&(test.drawdown20>-.10)&(test.stock_vol20<.05)
   # Market filter is applied after base selection, not refitted.
   test["market_pass"]=(test.qqq_vs_ma20>0)&(test.qqq_ret5>0)
+  test["fold"]=j
+  candidate_rows.append(test[["ticker","date","fold","edge","expected_return","uncertainty","p_down","risk_pass","quality_pass","market_pass","qqq_vs_ma20","qqq_ret5","rel5","drawdown20","stock_vol20"]].copy())
   for variant,subset in [("CORE50",test[test.ticker.isin(CORE50)]),("TECH80",test),("TECH80_QUALITY",test)]:
    selected=[]
    for dt,g in subset[subset.risk_pass].groupby("date"):
@@ -71,6 +73,7 @@ def main():
  all_selected=pd.concat(output,ignore_index=True)
  cols=["ticker","date","fold","variant","edge","expected_return","uncertainty","p_down","qqq_vs_ma20","qqq_ret5","rel5","drawdown20","stock_vol20"]
  all_selected[cols].to_csv(out/"signals.csv",index=False)
+ pd.concat(candidate_rows,ignore_index=True).to_csv(out/"candidate_scores.csv.gz",index=False,compression="gzip")
  summary={"version":"v4.13","status":"RESEARCH / NOT INDEPENDENT OOS" if not excluded else "DEGRADED COVERAGE / NOT FULL 80","universe_size":len(active),"requested_universe_size":len(UNIVERSE),"universe":active,"excluded_tickers":excluded,"variants":{k:int(v) for k,v in all_selected.groupby("variant").size().items()},"fold_diagnostics":diagnostics,
  "selection_rules":{"TECH80_QUALITY":"top 10% by edge after risk gate, positive edge, rel5>0, drawdown20>-10%, stock_vol20<5%, QQQ above MA20 and QQQ 5D>0"},
  "limitations":["80-stock universe is retrospectively selected and includes companies with shorter trading history","Same historical sample has been repeatedly inspected; not independent validation","Fixed quality thresholds are exploratory, not calibrated on independent train periods","No portfolio or MA30 exit replay in this module","D+1 label uses close-to-next-close; execution at next open requires separate replay","No direct comparison of equal-model 50-stock training: CORE50 rows here use 80-stock fitted model"]}
