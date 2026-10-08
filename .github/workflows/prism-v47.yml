@@ -1,0 +1,41 @@
+name: PRISM v4.7 Trend Capture Auto
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/trend_v47.py'
+      - '.github/workflows/prism-v47.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Frozen entry generation
+        run: python -m prism.v45_cli
+      - name: Baseline execution
+        run: python -m prism.execution_v45
+      - name: Trend exit comparison
+        run: python -m prism.trend_v47
+      - name: Diagnostics
+        if: always()
+        run: |
+          mkdir -p results/prism-v47
+          test -f results/prism-v47/summary.json || echo '{"status":"incomplete","note":"Review failed workflow step"}' > results/prism-v47/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v47-trend-capture
+          path: |
+            results/prism-v47/
+            results/prism-v45/
+            results/prism-v45-execution/
