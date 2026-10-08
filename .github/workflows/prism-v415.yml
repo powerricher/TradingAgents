@@ -1,0 +1,42 @@
+name: PRISM v4.15 Signal Attribution Audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/audit_v415.py'
+      - '.github/workflows/prism-v415.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Build all point-in-time scored candidates
+        run: python -m prism.entry_v413
+      - name: Replay MA30 portfolio
+        run: python -m prism.replay_v414
+      - name: Diagnose realized losses and missed upside
+        run: python -m prism.audit_v415
+      - name: Ensure diagnostic artifact
+        if: always()
+        run: |
+          mkdir -p results/prism-v415
+          test -f results/prism-v415/summary.json || echo '{"status":"FAILED","see":"job logs"}' > results/prism-v415/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v415-signal-attribution
+          path: |
+            results/prism-v415/
+            results/prism-v413/summary.json
+            results/prism-v414/summary.json
+          if-no-files-found: error
