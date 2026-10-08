@@ -1,0 +1,43 @@
+name: PRISM v4.16 Risk Gate Effectiveness
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/audit_v416.py'
+      - '.github/workflows/prism-v416.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Recreate scored 80-stock candidates
+        run: python -m prism.entry_v413
+      - name: Recreate fixed MA30 portfolio
+        run: python -m prism.replay_v414
+      - name: Recreate loss attribution
+        run: python -m prism.audit_v415
+      - name: Compare Risk Gate upside and downside capture
+        run: python -m prism.audit_v416
+      - name: Diagnostic
+        if: always()
+        run: |
+          mkdir -p results/prism-v416
+          test -f results/prism-v416/summary.json || echo '{"status":"FAILED","see":"workflow logs"}' > results/prism-v416/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v416-risk-gate-audit
+          path: |
+            results/prism-v416/
+            results/prism-v415/summary.json
+          if-no-files-found: error
