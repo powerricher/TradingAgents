@@ -14,7 +14,22 @@ from .universe_v413 import UNIVERSE
 def main():
  p=argparse.ArgumentParser();p.add_argument("--out",default="results/prism-v413");a=p.parse_args()
  out=Path(a.out);out.mkdir(parents=True,exist_ok=True)
- panel=_add_regime(_prep(UNIVERSE,"2021-01-01","2026-10-06"))
+ active=list(UNIVERSE)
+ excluded=[]
+ while True:
+  try:
+   panel=_add_regime(_prep(active,"2021-01-01","2026-10-06"))
+   break
+  except ValueError as exc:
+   import re
+   match=re.search(r"No price history for ([A-Z0-9.\\-]+)",str(exc))
+   if not match or match.group(1) not in active:raise
+   missing=match.group(1)
+   active.remove(missing)
+   excluded.append({"ticker":missing,"reason":"No historical price data"})
+   print("DATA_COVERAGE_EXCLUSION",missing,flush=True)
+   if len(active)<70:raise RuntimeError("Fewer than 70 tickers available")
+
  if panel.empty:raise RuntimeError("Empty price panel")
  panel["_date"]=pd.to_datetime(panel.date)
  output=[];diagnostics=[]
@@ -56,7 +71,7 @@ def main():
  all_selected=pd.concat(output,ignore_index=True)
  cols=["ticker","date","fold","variant","edge","expected_return","uncertainty","p_down","qqq_vs_ma20","qqq_ret5","rel5","drawdown20","stock_vol20"]
  all_selected[cols].to_csv(out/"signals.csv",index=False)
- summary={"version":"v4.13","status":"RESEARCH / NOT INDEPENDENT OOS","universe_size":len(UNIVERSE),"universe":UNIVERSE,"variants":{k:int(v) for k,v in all_selected.groupby("variant").size().items()},"fold_diagnostics":diagnostics,
+ summary={"version":"v4.13","status":"RESEARCH / NOT INDEPENDENT OOS" if not excluded else "DEGRADED COVERAGE / NOT FULL 80","universe_size":len(active),"requested_universe_size":len(UNIVERSE),"universe":active,"excluded_tickers":excluded,"variants":{k:int(v) for k,v in all_selected.groupby("variant").size().items()},"fold_diagnostics":diagnostics,
  "selection_rules":{"TECH80_QUALITY":"top 10% by edge after risk gate, positive edge, rel5>0, drawdown20>-10%, stock_vol20<5%, QQQ above MA20 and QQQ 5D>0"},
  "limitations":["80-stock universe is retrospectively selected and includes companies with shorter trading history","Same historical sample has been repeatedly inspected; not independent validation","Fixed quality thresholds are exploratory, not calibrated on independent train periods","No portfolio or MA30 exit replay in this module","D+1 label uses close-to-next-close; execution at next open requires separate replay","No direct comparison of equal-model 50-stock training: CORE50 rows here use 80-stock fitted model"]}
  (out/"summary.json").write_text(json.dumps(summary,ensure_ascii=False,indent=2))
