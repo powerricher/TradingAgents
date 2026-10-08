@@ -4,7 +4,7 @@ Research universe is retrospective; not point-in-time historical membership.
 from .universe_v45 import UNIVERSE as CORE50
 ADDITIONS={
 "SEMICONDUCTOR":"ON MCHP MPWR SWKS QRVO LSCC ACLS FORM AEHR CAMT".split(),
-"AI_INFRASTRUCTURE":"PSTG NTAP WDC STX GLW AAOI FN".split(),
+"AI_INFRASTRUCTURE":"PSTG NTAP WDC STX GLW AAOI FN KEYS".split(),
 "SOFTWARE_CYBER":"MDB OKTA HUBS TEAM DOCU TWLO PATH".split(),
 "POWER_AUTOMATION":"GEV PWR NVT MOD ITRI".split(),
 }
