@@ -19,7 +19,15 @@ jobs:
         run: python -m prism.rolling_v42_cli "NVDA,AAPL,MSFT,AMZN,GOOGL,META,AVGO,TSLA,NFLX,AMD,ORCL,PLTR,CSCO,IBM,INTC,QCOM,TXN,AMAT,LRCX,MU,ARM,CRWD,PANW,ADBE,NOW,SHOP,UBER,ABNB,COIN,HOOD" --top-pct 0.10 --uncertainty-penalty 0.35
       - name: Compare exits
         run: python -m prism.exit_compare --source results/prism-v42/report.json
+      - name: Diagnostics
+        if: always()
+        run: |
+          echo "Results tree:"
+          find results -maxdepth 3 -type f 2>/dev/null || true
+          mkdir -p results/prism-exit
+          if [ ! -f results/prism-exit/summary.json ]; then echo '{"status":"incomplete","message":"Inspect failed workflow step logs"}' > results/prism-exit/diagnostic.json; fi
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: prism-exit-comparison
           path: results/prism-exit/
