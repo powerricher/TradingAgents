@@ -1,0 +1,39 @@
+name: PRISM v4.12 Entry Replay Auto
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/replay_v412.py'
+      - '.github/workflows/prism-v412.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Rebuild baseline entry signals
+        run: python -m prism.v45_cli
+      - name: Rebuild multi-horizon signals
+        run: python -m prism.entry_v411
+      - name: Replay both entries under fixed MA30
+        run: python -m prism.replay_v412
+      - name: Diagnostic
+        if: always()
+        run: |
+          mkdir -p results/prism-v412
+          test -f results/prism-v412/summary.json || echo '{"status":"FAILED","check":"Actions logs"}' > results/prism-v412/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v412-entry-comparison
+          path: results/prism-v412/
+          if-no-files-found: error
