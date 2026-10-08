@@ -1,6 +1,12 @@
-name: PRISM v4.3 50-Stock Research
+name: PRISM v4.3 Auto Exit Validation
 on:
   workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - "prism/exit_compare.py"
+      - "prism/v43_cli.py"
+      - ".github/workflows/prism-v43.yml"
 permissions:
   contents: read
 jobs:
@@ -29,7 +35,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: prism-v43-50-stock-research
+          name: prism-v43-auto-exit-validation
           path: |
             results/prism-v43/
             results/prism-v43-exit/
