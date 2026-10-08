@@ -1,0 +1,38 @@
+name: PRISM v4.6 Portfolio Diagnostics
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/portfolio_v46.py'
+      - '.github/workflows/prism-v46.yml'
+permissions:
+  contents: read
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Build v4.5 frozen signals
+        run: python -m prism.v45_cli
+      - name: Replay v4.5 trades
+        run: python -m prism.execution_v45
+      - name: v4.6 portfolio and signal diagnostics
+        run: python -m prism.portfolio_v46
+      - name: Upload all results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-v46-portfolio-diagnostics
+          if-no-files-found: warn
+          path: |
+            results/prism-v45/
+            results/prism-v45-execution/
+            results/prism-v46/
