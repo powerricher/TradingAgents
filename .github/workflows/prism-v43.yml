@@ -1,0 +1,35 @@
+name: PRISM v4.3 50-Stock Research
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install
+        run: pip install . scikit-learn
+      - name: Build 50-stock rolling entries
+        run: python -m prism.v43_cli --output results/prism-v43/report.html
+      - name: Compare exit rules
+        run: python -m prism.exit_compare --source results/prism-v43/report.json --out results/prism-v43-exit
+      - name: Diagnostics
+        if: always()
+        run: |
+          mkdir -p results/prism-v43-exit
+          find results -maxdepth 3 -type f 2>/dev/null || true
+          test -f results/prism-v43-exit/summary.json || echo '{"status":"incomplete","check":"job logs"}' > results/prism-v43-exit/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v43-50-stock-research
+          path: |
+            results/prism-v43/
+            results/prism-v43-exit/
