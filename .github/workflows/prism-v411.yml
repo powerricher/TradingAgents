@@ -1,0 +1,35 @@
+name: PRISM v4.11 Multi Horizon Research
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/entry_v411.py'
+      - '.github/workflows/prism-v411.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Train purged multi-horizon entry challengers
+        run: python -m prism.entry_v411
+      - name: Diagnostic artifact on failure
+        if: always()
+        run: |
+          mkdir -p results/prism-v411
+          test -f results/prism-v411/summary.json || echo '{"status":"FAILED","check":"Actions logs"}' > results/prism-v411/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v411-multi-horizon
+          path: results/prism-v411/
+          if-no-files-found: error
