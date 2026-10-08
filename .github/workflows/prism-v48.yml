@@ -1,0 +1,37 @@
+name: PRISM v4.8 Extended Trend
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/trend_v48.py'
+      - '.github/workflows/prism-v48.yml'
+permissions:
+  contents: read
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Recreate v4.5 frozen signal selection
+        run: python -m prism.v45_cli
+      - name: v4.8 extended trend and portfolio
+        run: python -m prism.trend_v48
+      - name: Always generate diagnostic artifact
+        if: always()
+        run: |
+          mkdir -p results/prism-v48
+          test -f results/prism-v48/summary.json || echo '{"status":"FAILED","note":"See Actions job logs"}' > results/prism-v48/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v48-extended-trend
+          path: results/prism-v48/
+          if-no-files-found: error
