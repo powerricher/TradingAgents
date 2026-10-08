@@ -1,0 +1,48 @@
+name: PRISM Parallel Tracks A and B
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/forward_track_a.py'
+      - 'prism/research_track_b.py'
+      - '.github/workflows/prism-parallel.yml'
+permissions:
+  contents: read
+jobs:
+  forward_manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . pandas numpy
+      - run: python -m prism.forward_track_a
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-track-a-manifest
+          path: results/prism-track-a/
+  challenger_research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - run: python -m prism.entry_v413
+      - run: python -m prism.replay_v414
+      - run: python -m prism.ranking_v417
+      - run: python -m prism.research_track_b
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-track-b-research
+          path: results/prism-track-b/
