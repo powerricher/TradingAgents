@@ -1,0 +1,44 @@
+name: PRISM v4.19 Price Action Intelligence
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/price_action_v419.py'
+      - '.github/workflows/prism-v419.yml'
+      - 'prism/PRISM_V419_RESEARCH.md'
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Frozen TECH80 signals
+        run: python -m prism.entry_v413
+      - name: Frozen MA30 exits
+        run: python -m prism.replay_v414
+      - name: Original Ridge control
+        run: python -m prism.ranking_v417
+      - name: Price-action feature ablations
+        run: python -m prism.price_action_v419
+      - name: Failure diagnostics
+        if: always()
+        run: |
+          mkdir -p results/prism-v419
+          test -f results/prism-v419/summary.json || echo '{"status":"FAILED","check":"workflow logs"}' > results/prism-v419/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v419-price-action
+          path: |
+            results/prism-v419/
+            results/prism-v417/summary.json
+          if-no-files-found: error
