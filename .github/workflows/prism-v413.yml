@@ -1,0 +1,36 @@
+name: PRISM v4.13 Tech 80 Entry Quality
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/universe_v413.py'
+      - 'prism/entry_v413.py'
+      - '.github/workflows/prism-v413.yml'
+permissions:
+  contents: read
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Train and evaluate tech 80 entry signals
+        run: python -m prism.entry_v413
+      - name: Diagnostic artifact
+        if: always()
+        run: |
+          mkdir -p results/prism-v413
+          test -f results/prism-v413/summary.json || echo '{"status":"FAILED","check":"job logs"}' > results/prism-v413/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v413-tech80-entry
+          path: results/prism-v413/
+          if-no-files-found: error
