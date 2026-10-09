@@ -1,0 +1,38 @@
+name: PRISM v4.29 Universe 100 Ceiling Audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/universe_v429.py'
+      - 'prism/universe_ceiling_v429.py'
+      - '.github/workflows/prism-v429.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Check 100-stock membership
+        run: python -c "from prism.universe_v429 import UNIVERSE; assert len(UNIVERSE)==100"
+      - name: Evaluate 80-trained vs 100-trained and opportunity ceiling
+        run: python -m prism.universe_ceiling_v429
+      - name: Failure diagnostics
+        if: always()
+        run: |
+          mkdir -p results/prism-v429
+          test -f results/prism-v429/summary.json || echo '{"status":"FAILED","see":"job logs"}' > results/prism-v429/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v429-universe100-ceiling
+          path: results/prism-v429/
+          if-no-files-found: error
