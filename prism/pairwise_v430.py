@@ -105,8 +105,7 @@ def main():
   all_ledgers+=ledger;all_curves+=curve
  # Preserve historical 80-stock VCP reference from v4.20 as an explicitly
  # separate comparison, not falsely identical to the re-trained 80 model.
- ref=pd.read_csv(a.v420)
- reference={"signals":len(ref),"status":"v4.20 VCP reference: separate original experiment"}
+ reference={"status":"v4.20 historical VCP80 benchmark is external; no v4.20 artifact required", "historical_compound_return":1.8995, "comparison":"NON_IDENTICAL_MODEL"}
  report={"version":"v4.30","status":"RESEARCH / NOT INDEPENDENT OOS","experiments":all_results,
  "reference":reference,"limitations":[
  "VCP100 is a chronological ridge ranker on price-action/VCP features, not an exact reproduction of v4.20 feature set.",
