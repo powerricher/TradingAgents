@@ -27,8 +27,8 @@ def main():
   x=led[led.variant==variant].sort_values("entry_date").copy()
   c=cand[cand.variant==variant].copy()
   if x.empty or c.empty:raise RuntimeError("Missing execution "+variant)
-  x=x.merge(c[["ticker","entry_date","reason"]],on=["ticker","entry_date"],how="left",validate="one_to_one")
-  if x.reason.isna().any():raise RuntimeError("Unmatched exits "+variant)
+  x=x.merge(c[["ticker","entry_date","reason"]].rename(columns={"reason":"candidate_exit_reason"}),on=["ticker","entry_date"],how="left",validate="one_to_one")
+  if x.candidate_exit_reason.isna().any():raise RuntimeError("Unmatched exits "+variant)
   trades[role]=x
   # Position is open after its entry session open and before its exit session open.
   pos=[]
@@ -41,7 +41,7 @@ def main():
   metrics[role]={"trades":len(x),"invested_session_fraction":float(held.mean()),
    "cash_session_fraction":float((~held).mean()),
    "mean_holding_calendar_days":float((x.exit_date-x.entry_date).dt.days.mean()),
-   "terminal_mark_count":int((x.reason=="terminal_mark_to_market").sum()),
+   "terminal_mark_count":int((x.candidate_exit_reason=="terminal_mark_to_market").sum()),
    "distinct_tickers":int(x.ticker.nunique())}
  eq["ticker_a"]=positions["A_TREND_ATR4"];eq["ticker_b"]=positions["B_ROTATION_MA30"]
  eq["both_invested"]=(eq.ticker_a!="")&(eq.ticker_b!="")
