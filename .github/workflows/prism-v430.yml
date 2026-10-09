@@ -1,0 +1,39 @@
+name: PRISM v4.30 VCP100 Pairwise
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/pairwise_v430.py'
+      - '.github/workflows/prism-v430.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Build 100-stock signals and MA30 exits
+        run: python -m prism.universe_ceiling_v429
+      - name: Evaluate VCP and pairwise rankings
+        run: python -m prism.pairwise_v430
+      - name: Failure diagnostic
+        if: always()
+        run: |
+          mkdir -p results/prism-v430
+          test -f results/prism-v430/summary.json || echo '{"status":"FAILED","see":"job logs"}' > results/prism-v430/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v430-vcp100-pairwise
+          path: |
+            results/prism-v430/
+            results/prism-v429/summary.json
+          if-no-files-found: error
