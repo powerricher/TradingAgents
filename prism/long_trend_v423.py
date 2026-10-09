@@ -68,8 +68,10 @@ def main():
  "Daily close MDD excludes intraday drawdowns."]}
  ledger_rows=[];curve_rows=[]
  for label,col in [("VCP_1S","rank_VCP_ALL"),("LONG_TREND_1S","rank_LONG_TREND")]:
-  rows=[{"ticker":r.ticker,"mode":label,"entry_date":r.entry_date,"exit_date":str(r.exit_date.date()),"entry_price":float(r.entry_price),"exit_price":float(r.exit_price),"edge":float(getattr(r,col)),"reason":r.reason} for r in df.itertuples(index=False)]
+  rows=[{"ticker":r.ticker,"mode":label,"entry_date":str(r.entry_date.date()),"exit_date":str(r.exit_date.date()),"entry_price":float(r.entry_price),"exit_price":float(r.exit_price),"edge":float(getattr(r,col)),"reason":r.reason} for r in df.itertuples(index=False)]
   perf,ledger,curve=portfolio(rows,prices,label,rotation=False)
+  if perf["trades"]==0 or len(ledger)==0:
+   raise RuntimeError("Invalid zero-trade portfolio: check entry_date normalization")
   result["strategies"][label]={"compound_return":perf["return"],"daily_close_mdd":perf["daily_close_mdd"],"trades":perf["trades"],"final_krw":perf["final_krw"]}
   for x in ledger:x["strategy"]=label
   for x in curve:x["strategy"]=label
@@ -78,6 +80,7 @@ def main():
  # Risk-control benchmark is fixed VCP_ALL dynamic 2 slots, weighted.
  records=df[["ticker","entry_date","exit_date","entry_price","exit_price","reason","rank_VCP_ALL"]].rename(columns={"rank_VCP_ALL":"rank"})
  perf,ledger,curve=dynamic(records,prices,2,True)
+ if perf["trades"]==0:raise RuntimeError("Invalid zero-trade dynamic benchmark")
  result["strategies"]["VCP_DYNAMIC_2S_WEIGHTED"]={"compound_return":perf["compound_return"],"daily_close_mdd":perf["daily_close_mdd"],"trades":perf["trades"],"final_krw":perf["final_krw"]}
  for x in ledger:x["strategy"]="VCP_DYNAMIC_2S_WEIGHTED"
  for x in curve:x["strategy"]="VCP_DYNAMIC_2S_WEIGHTED"
