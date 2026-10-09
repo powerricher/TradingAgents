@@ -1,0 +1,40 @@
+name: PRISM v4.26 False Signal Rejection
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/selection_v426.py'
+      - '.github/workflows/prism-v426.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - run: python -m prism.entry_v413
+      - run: python -m prism.replay_v414
+      - run: python -m prism.ranking_v417
+      - run: python -m prism.price_action_v419
+      - run: python -m prism.vcp_v420
+      - name: Chronological loss gate comparison
+        run: python -m prism.selection_v426
+      - name: Failure diagnostics
+        if: always()
+        run: |
+          mkdir -p results/prism-v426
+          test -f results/prism-v426/summary.json || echo '{"status":"FAILED","see":"job logs"}' > results/prism-v426/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v426-false-signal-rejection
+          path: results/prism-v426/
+          if-no-files-found: error
