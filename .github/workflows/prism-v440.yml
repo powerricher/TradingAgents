@@ -1,0 +1,47 @@
+name: PRISM v4.40 Dual Seed Specialization
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/dual_specialization_v440.py'
+      - '.github/workflows/prism-v440.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Rebuild frozen VCP80
+        run: |
+          python -m prism.entry_v413
+          python -m prism.replay_v414
+          python -m prism.ranking_v417
+          python -m prism.price_action_v419
+          python -m prism.vcp_v420
+      - name: Generate independent seed curves
+        run: |
+          python -m prism.regime_adaptive_v436
+          python -m prism.unified_exit_v438
+          python -m prism.dual_seed_v439
+      - name: Audit specialized seed roles and overlap
+        run: python -m prism.dual_specialization_v440
+      - name: Failure diagnostic
+        if: always()
+        run: |
+          mkdir -p results/prism-v440
+          test -f results/prism-v440/summary.json || echo '{"status":"FAILED","check":"job logs"}' > results/prism-v440/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v440-dual-specialization
+          path: results/prism-v440/
+          if-no-files-found: error
