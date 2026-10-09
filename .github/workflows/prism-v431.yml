@@ -1,0 +1,45 @@
+name: PRISM v4.31 VCP Reproduction 100
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - '.github/workflows/prism-v431.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Rebuild original VCP80
+        run: |
+          python -m prism.entry_v413
+          python -m prism.replay_v414
+          python -m prism.ranking_v417
+          python -m prism.price_action_v419
+          python -m prism.vcp_v420
+      - name: Rebuild universe 100
+        run: python -m prism.universe_ceiling_v429
+      - name: Check original VCP80 result and 100-stock coverage
+        run: |
+          python -c "import json; from pathlib import Path; a=json.loads(Path('results/prism-v420/summary.json').read_text()); b=json.loads(Path('results/prism-v429/summary.json').read_text()); x=a['variants']['VCP_ALL']; assert abs(x['return']-1.8995)<.005, x; assert x['trades']==45; assert b['universe_count']==100; print('VCP80 reproduced:',x['return'],'TECH100 coverage:',b['universe_count'])"
+      - name: Diagnostic artifact
+        if: always()
+        run: |
+          mkdir -p results/prism-v431
+          cp results/prism-v420/summary.json results/prism-v431/vcp80_summary.json || true
+          cp results/prism-v429/summary.json results/prism-v431/universe100_summary.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v431-reproduction-check
+          path: results/prism-v431/
+          if-no-files-found: error
