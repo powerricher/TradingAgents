@@ -1,0 +1,42 @@
+name: PRISM v4.34 ATR Risk Audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/atr_risk_v434.py'
+      - '.github/workflows/prism-v434.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Rebuild frozen VCP80
+        run: |
+          python -m prism.entry_v413
+          python -m prism.replay_v414
+          python -m prism.ranking_v417
+          python -m prism.price_action_v419
+          python -m prism.vcp_v420
+      - name: ATR risk and sensitivity audit
+        run: python -m prism.atr_risk_v434
+      - name: Failure diagnostic
+        if: always()
+        run: |
+          mkdir -p results/prism-v434
+          test -f results/prism-v434/summary.json || echo '{"status":"FAILED","see":"job logs"}' > results/prism-v434/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v434-atr-risk-audit
+          path: results/prism-v434/
+          if-no-files-found: error
