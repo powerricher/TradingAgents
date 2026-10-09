@@ -40,7 +40,7 @@ def exit_variant(d,entry,baseline_exit,baseline_price,mode):
   elif mode=="HYBRID":
    stop=(entry_px*.95 if peak<entry_px*1.10 else peak-4*avj) if np.isfinite(avj) else entry_px*.95
   else:stop=-np.inf
- return None
+ return d.index[-1],float(d.Close.iloc[-1]),'terminal_mark_to_market'
 def main():
  p=argparse.ArgumentParser();p.add_argument("--scored",default="results/prism-v420/scored_signals.csv");p.add_argument("--out",default="results/prism-v432");a=p.parse_args()
  out=Path(a.out);out.mkdir(parents=True,exist_ok=True)
