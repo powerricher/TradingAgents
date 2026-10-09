@@ -86,7 +86,7 @@ def main():
   perf,ledger,curve=portfolio(rows,prices,mode,rotation=False)
   if perf["trades"]==0:raise RuntimeError("Zero-trade portfolio "+mode)
   results["strategies"][mode]=perf
-  results["strategies"][mode]["terminal_marks"]=int((st.reason=="terminal_mark_to_market").sum()) if "st" in locals() else sum(x["reason"]=="terminal_mark_to_market" for x in trade_stats)
+  results["strategies"][mode]["terminal_marks"]=sum(x["reason"]=="terminal_mark_to_market" for x in trade_stats)
   st=pd.DataFrame(trade_stats)
   results["trade_level"][mode]={"n":len(st),"mean_mfe":float(st.mfe.mean()),"mean_mae":float(st.mae.mean()),
    "mean_giveback":float(st.giveback.mean()),"mean_hold_sessions":float(st.holding_sessions.mean()),
