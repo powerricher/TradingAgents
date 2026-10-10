@@ -51,7 +51,7 @@ def main():
   errors.append({"source":"SEC_CONFIG","error":"SEC_USER_AGENT secret not configured; no SEC fetch attempted"})
  if not a.offline and os.getenv("SEC_USER_AGENT"):
   s=requests.Session()
-  s.headers.update({"User-Agent":os.environ["SEC_USER_AGENT"],"Accept-Encoding":"gzip, deflate","Host":"www.sec.gov"})
+  s.headers.update({"User-Agent":os.environ["SEC_USER_AGENT"],"Accept-Encoding":"gzip, deflate"})
   try:
    ticker_map=sec_json(s,"https://www.sec.gov/files/company_tickers.json")
    mapping={v["ticker"].upper():int(v["cik_str"]) for v in ticker_map.values()}
@@ -62,7 +62,6 @@ def main():
    if not cik:
     errors.append({"ticker":ticker,"error":"CIK mapping unavailable"});continue
    try:
-    s.headers.pop("Host",None)
     obj=sec_json(s,f"https://data.sec.gov/submissions/CIK{cik:010d}.json")
     recent=obj["filings"]["recent"]
     for i,form in enumerate(recent["form"]):
@@ -85,6 +84,7 @@ def main():
    except Exception as e:errors.append({"ticker":ticker,"error":str(e)})
    time.sleep(.2)
  report["filing_matches"]=len(evidence)
+ report["status"]="SOURCE_ACCESS_FAILED" if any(x.get("source") in ("SEC_TICKER_MAP","SEC_CONFIG") for x in errors) else "PIT_EVIDENCE_DISCOVERY_ONLY"
  report["sources"]={"sec_errors":len(errors),"sec_tickers_with_errors":len(set(x.get("ticker","") for x in errors))}
  pd.DataFrame(evidence,columns=["ticker","entry_date","detector","form","acceptance_utc","accession","source_url","classification","catalyst_direction","impact_score"]).to_csv(out/"sec_filing_evidence.csv",index=False)
  (out/"source_errors.json").write_text(json.dumps(errors,indent=2,ensure_ascii=False))
