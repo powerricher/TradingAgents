@@ -25,11 +25,26 @@ def discover(d,q,ticker):
  prev_support=l.shift(2).rolling(20,min_periods=20).min()
  reversal=(l.shift(1)<prev_support)&(c>prev_support)&(c>c.shift(1))&(v>vol20)
  breakout=(range10/range40<.75)&(c>high20)&(v>1.3*vol20)
+ # BCH: near the 20/30-session high after a stable, defended base.
+ hi20=h.rolling(20,min_periods=20).max()
+ hi30=h.rolling(30,min_periods=30).max()
+ proximity=((c/hi20>=.97)&(c<=hi20))|((c/hi30>=.97)&(c<=hi30))
+ base_high=h.rolling(25,min_periods=25).max()
+ base_low=l.rolling(25,min_periods=25).min()
+ tight=(base_high/base_low-1<=.18)
+ previous_low=l.shift(10).rolling(10,min_periods=10).min()
+ recent_low=l.rolling(10,min_periods=10).min()
+ defended=recent_low>=previous_low*.97
+ avg10=c.rolling(10,min_periods=10).mean()
+ compression=c.pct_change().rolling(10,min_periods=10).std()<=c.pct_change().rolling(30,min_periods=30).std()
+ bch=proximity&tight&defended&(c>=avg10)&compression
+ bch_score=(c/base_high)+.2*(recent_low/previous_low-1)
  result=[]
  for label,mask,score in [
   ("RS_DIVERGENCE",rs_signal,rs),
   ("FAILED_BREAKDOWN",reversal,(c/prev_support-1)),
-  ("VCP_BREAKOUT",breakout,(c/high20-1))]:
+  ("VCP_BREAKOUT",breakout,(c/high20-1)),
+  ("BASE_CONSOLIDATION_HIGH",bch,bch_score)]:
   ok=mask.fillna(False)&(d.index>=pd.Timestamp("2022-01-01"))&(d.index<=CUTOFF-pd.Timedelta(days=220))
   for dt in d.index[ok]:
    if not np.isfinite(score.loc[dt]):continue
@@ -80,23 +95,29 @@ def main():
   "Seed A ATR4 is frozen and includes terminal synthetic valuation.",
   "Seed B has no shorting, leverage, sector rotation or earnings event timestamps.",
   "Scores are fixed rules, not trained D+5/D+10/D+20 forecasts.",
+  "BCH uses high proximity, 25-session range <=18%, defended lows, MA10 and volatility compression.",
+  "Leading dates without account valuations are treated as initial cash; internal gaps fail.",
   "Daily-close MDD excludes intraday drawdowns."]}
  ledgers=[];curves=[];combined=[]
- for mode in ("RS_DIVERGENCE","FAILED_BREAKDOWN","VCP_BREAKOUT","ALL_DISCOVERY"):
+ for mode in ("RS_DIVERGENCE","FAILED_BREAKDOWN","VCP_BREAKOUT","BASE_CONSOLIDATION_HIGH","ALL_DISCOVERY"):
   z=trades if mode=="ALL_DISCOVERY" else trades[trades.detector==mode]
   if z.empty:raise RuntimeError("No candidate trades "+mode)
   # Within one date, cross-detector scores are not calibrated. The ALL mode
   # gives fixed priority to RS, then reversal, then breakout as a hypothesis.
   rows=[]
   for r in z.itertuples(index=False):
-   priority={"RS_DIVERGENCE":3,"FAILED_BREAKDOWN":2,"VCP_BREAKOUT":1}[r.detector]
+   priority={"RS_DIVERGENCE":4,"FAILED_BREAKDOWN":3,"VCP_BREAKOUT":2,"BASE_CONSOLIDATION_HIGH":1}[r.detector]
    rows.append({"ticker":r.ticker,"mode":mode,"entry_date":r.entry_date,"exit_date":r.exit_date,
     "entry_price":r.entry_price,"exit_price":r.exit_price,"edge":float(priority*100+r.edge) if mode=="ALL_DISCOVERY" else r.edge,"reason":r.reason})
   perf,ledger,curve=portfolio(rows,prices,mode,rotation=False)
   b=pd.DataFrame(curve);b.date=pd.to_datetime(b.date).dt.normalize()
   bb=b.set_index("date").equity
-  xa,xb=aa.align(bb,join="outer")
-  if xa.isna().any() or xb.isna().any():raise RuntimeError("Mismatched equity calendars "+mode)
+  calendar=aa.index.union(bb.index).sort_values()
+  xa=aa.reindex(calendar);xb=bb.reindex(calendar)
+  xa.loc[calendar<aa.index.min()]=INITIAL
+  xb.loc[calendar<bb.index.min()]=INITIAL
+  if xa.isna().any() or xb.isna().any():
+   raise RuntimeError("Internal equity calendar gaps "+mode)
   total=xa+xb;peak=np.maximum.accumulate(np.r_[2*INITIAL,total.to_numpy()])[1:]
   report["strategies"][mode]={"seed_b":perf,"combined_return":float(total.iloc[-1]/(2*INITIAL)-1),
    "combined_mdd":float(np.min(total.to_numpy()/peak-1)),"candidate_count":len(z)}
