@@ -1,0 +1,65 @@
+name: PRISM v4.49 Persistent Catalyst Infrastructure
+on:
+  workflow_dispatch:
+    inputs:
+      collect:
+        description: 'Try bounded GDELT discovery (max 5 requests)'
+        type: boolean
+        default: true
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/catalyst_store_v449.py'
+      - '.github/workflows/prism-v449.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy requests
+      - name: Restore prior evidence cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data-cache/prism-catalysts
+          key: prism-catalysts-${{ github.run_id }}
+          restore-keys: |
+            prism-catalysts-
+      - name: Build technical candidates and historical targets
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: |
+          python -m prism.entry_v413
+          python -m prism.replay_v414
+          python -m prism.ranking_v417
+          python -m prism.price_action_v419
+          python -m prism.vcp_v420
+          python -m prism.regime_adaptive_v436
+          python -m prism.seed_b_v445
+          python -m prism.catalyst_evidence_v447 --offline
+      - name: Run persistent evidence validation
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: python -m prism.catalyst_store_v449 --collect
+      - name: Save evidence cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data-cache/prism-catalysts
+          key: prism-catalysts-${{ github.run_id }}
+      - name: Upload diagnostics and persistent data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-v449-evidence-infrastructure
+          path: |
+            results/prism-v449/
+            data-cache/prism-catalysts/
+          if-no-files-found: warn
