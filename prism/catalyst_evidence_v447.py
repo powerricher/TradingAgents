@@ -46,9 +46,11 @@ def main():
    "No historical catalyst score or investment return improvement is claimed.",
    "Universe is retrospective; future information leakage and survivorship need separate audits."]}
  evidence=[];errors=[]
- if not a.offline:
+ if not a.offline and not os.getenv("SEC_USER_AGENT"):
+  errors.append({"source":"SEC_CONFIG","error":"SEC_USER_AGENT secret not configured; no SEC fetch attempted"})
+ if not a.offline and os.getenv("SEC_USER_AGENT"):
   s=requests.Session()
-  s.headers.update({"User-Agent":os.getenv("SEC_USER_AGENT","PRISM historical research prism-research contact research@example.org"),"Accept-Encoding":"gzip, deflate","Host":"www.sec.gov"})
+  s.headers.update({"User-Agent":os.environ["SEC_USER_AGENT"],"Accept-Encoding":"gzip, deflate","Host":"www.sec.gov"})
   try:
    ticker_map=sec_json(s,"https://www.sec.gov/files/company_tickers.json")
    mapping={v["ticker"].upper():int(v["cik_str"]) for v in ticker_map.values()}
