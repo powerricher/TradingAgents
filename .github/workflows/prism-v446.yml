@@ -1,0 +1,45 @@
+name: PRISM v4.46 PIT Fundamental Audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/fundamental_audit_v446.py'
+      - '.github/workflows/prism-v446.yml'
+      - 'data/prism/fundamentals_pit.csv'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Rebuild v4.45 historical candidate baseline
+        run: |
+          python -m prism.entry_v413
+          python -m prism.replay_v414
+          python -m prism.ranking_v417
+          python -m prism.price_action_v419
+          python -m prism.vcp_v420
+          python -m prism.regime_adaptive_v436
+          python -m prism.seed_b_v445
+      - name: Audit collisions and PIT fundamental availability
+        run: python -m prism.fundamental_audit_v446
+      - name: Failure diagnostics
+        if: always()
+        run: |
+          mkdir -p results/prism-v446
+          test -f results/prism-v446/summary.json || echo '{"status":"FAILED","check":"job logs"}' > results/prism-v446/diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v446-fundamental-audit
+          path: results/prism-v446/
+          if-no-files-found: error
