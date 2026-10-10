@@ -22,13 +22,15 @@ def main():
    if d.empty:raise ValueError("No historical coverage")
    prices[t]=d
   except Exception as e:issues.append({"ticker":t,"error":str(e)})
- if issues:
-  (out/"coverage_errors.json").write_text(json.dumps(issues,indent=2))
-  raise RuntimeError("Incomplete 150-stock coverage: "+str(issues[:10]))
+ (out/"coverage_errors.json").write_text(json.dumps(issues,indent=2))
+ # Exclude only unavailable symbols; never fabricate or forward-fill pre-IPO prices.
+ if len(prices)<80:raise RuntimeError("Insufficient coverage: "+str(len(prices))+" of 150")
  q=load_prices("QQQ","2021-01-01").loc[lambda x:x.index<=CUTOFF].Close
  market=regimes(pd.Timestamp("2022-01-01"))
  allsignals=[]
  for t,d in prices.items():
+  # An IPO needs enough genuine post-listing bars to compute the signal.
+  if len(d)<65:continue
   for x in discover(d,q,t):
    if x["detector"]=="VCP_BREAKOUT":allsignals.append(x)
   for day,edge in bch_confirm(d):
@@ -37,11 +39,26 @@ def main():
  if signals.empty:raise RuntimeError("No signals")
  signals["entry_regime"]=signals.date.map(market)
  if signals.entry_regime.isna().any():raise RuntimeError("Unknown market regime")
- rows=make_rows(signals.to_dict("records"),prices)
+ # Resolve each signal independently; retain detector identity and missing exits.
+ rows=[];unresolved=[]
+ from .trend_v49 import exit_trade
+ for r in signals.itertuples(index=False):
+  d=prices[r.ticker]
+  try:
+   z=exit_trade(d,r.date,"CONFIRM30_1")
+  except (ValueError,KeyError):
+   z=None
+  if z is None:
+   unresolved.append({"ticker":r.ticker,"date":str(r.date.date()),"detector":r.detector})
+   continue
+  e,x,entry,px,reason=z
+  rows.append({"ticker":r.ticker,"entry_date":str(d.index[e].date()),
+   "exit_date":str(d.index[x].date()),"entry_price":float(entry),
+   "exit_price":float(px),"edge":float(r.edge),"reason":reason,
+   "detector":r.detector,"entry_regime":r.entry_regime})
+ pd.DataFrame(unresolved).to_csv(out/"unresolved_exits.csv",index=False)
+ if not rows:raise RuntimeError("No resolvable exits")
  candidates=pd.DataFrame(rows)
- candidates["detector"]=signals.detector.to_numpy() if len(candidates)==len(signals) else ""
- if (candidates.detector=="").any():raise RuntimeError("Candidate identity mismatch")
- candidates["entry_regime"]=signals.entry_regime.to_numpy()
  seed=pd.read_csv(a.seed_a)
  seed=seed[seed.variant=="ATR4_CONTROL"].copy()
  seed.date=pd.to_datetime(seed.date).dt.normalize()
@@ -50,9 +67,14 @@ def main():
  groups={"TECH80":set(CORE80),"TECH100":set(CORE100),"TECH150":set(UNIVERSE)}
  report={"version":"v4.45","status":"RETROSPECTIVE / NOT INDEPENDENT OOS",
  "universe_counts":{k:len(v) for k,v in groups.items()},"results":{},
+ "coverage":{"requested":150,"available":len(prices),"excluded":issues,
+  "effective_by_universe":{k:len(v.intersection(prices)) for k,v in groups.items()},
+  "unresolved_exits":len(unresolved)},
  "limitations":[
  "Same fixed Seed A TECH80 ATR4 account across all comparisons; only Seed B universe changes.",
  "All Seed B variants use same signal rules and MA30 exit, no retraining.",
+ "Unavailable tickers are excluded and reported; actual tested coverage may be below 150.",
+ "Unresolved candidate exits are excluded and reported, which can bias results; compare counts before interpreting.",
  "Universe is retrospectively chosen; ticker delistings and historical point-in-time membership not represented.",
  "Later-listed tickers have shorter histories; only dates when trading history exists can generate signals.",
  "Signal cutoff excludes last 220 calendar days; no forward validation.",
