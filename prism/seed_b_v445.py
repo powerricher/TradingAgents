@@ -19,7 +19,7 @@ def main():
  for t in UNIVERSE:
   try:
    d=load_prices(t,"2021-01-01").loc[lambda x:x.index<=CUTOFF]
-   if d.empty or d.index.min()>pd.Timestamp("2022-01-01"):raise ValueError("Insufficient historical coverage")
+   if d.empty:raise ValueError("No historical coverage")
    prices[t]=d
   except Exception as e:issues.append({"ticker":t,"error":str(e)})
  if issues:
@@ -54,7 +54,7 @@ def main():
  "Same fixed Seed A TECH80 ATR4 account across all comparisons; only Seed B universe changes.",
  "All Seed B variants use same signal rules and MA30 exit, no retraining.",
  "Universe is retrospectively chosen; ticker delistings and historical point-in-time membership not represented.",
- "Some later-listed tickers have shorter histories, though pre-2022 coverage is required.",
+ "Later-listed tickers have shorter histories; only dates when trading history exists can generate signals.",
  "Signal cutoff excludes last 220 calendar days; no forward validation.",
  "Cross-detector priority is a predeclared heuristic, not calibrated probability.",
  "Legacy portfolio engine terminal valuation is synthetic; Seed A may include unrealized gain.",
