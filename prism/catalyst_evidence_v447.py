@@ -41,6 +41,7 @@ def main():
    "Only filings with acceptance timestamps strictly before entry date 00:00 UTC are linked; conservative, may exclude known prior-close news.",
    "60-day lookback; source discovery is limited to top selected/conflict tickers, not all TECH150.",
    "SEC recent submissions may omit older filings; historical archive pagination is not implemented.",
+   "A completed job without SEC filing matches is not evidence that no historical catalysts existed.",
    "Press releases, news and IR timestamps require separate verified evidence; none are fabricated.",
    "SEC availability failures are reported; missing does not mean no catalyst.",
    "No historical catalyst score or investment return improvement is claimed.",
