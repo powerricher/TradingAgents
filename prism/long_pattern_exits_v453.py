@@ -108,7 +108,7 @@ def main():
  for group,allowed in groups.items():
   for pattern in ("ASCENDING_TRIANGLE","DESCENDING_TRIANGLE_REVERSAL","FALLING_WEDGE","ALL_LONG_PATTERNS"):
    for mode in MODES:
-    z=variants_df[(variants_df.mode==mode)&variants_df.ticker.isin(allowed)]
+    z=variants_df[(variants_df['mode']==mode)&variants_df.ticker.isin(allowed)]
     if pattern!="ALL_LONG_PATTERNS":z=z[z.pattern==pattern]
     name=f"{group}_{pattern}_{mode}"
     if z.empty:
