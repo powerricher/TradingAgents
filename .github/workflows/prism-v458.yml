@@ -1,6 +1,11 @@
 name: PRISM v4.58 HTML Scanner
 on:
   workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - '.github/workflows/prism-v458.yml'
+      - 'prism/live_scanner_v458.py'
 permissions:
   contents: read
 jobs:
