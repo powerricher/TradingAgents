@@ -1,0 +1,41 @@
+name: PRISM v4.59 Seed AB Audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/seed_ab_audit_v459.py'
+      - '.github/workflows/prism-v459.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Rebuild frozen Seed A and Seed B baselines
+        run: |
+          python -m prism.entry_v413
+          python -m prism.replay_v414
+          python -m prism.ranking_v417
+          python -m prism.price_action_v419
+          python -m prism.vcp_v420
+          python -m prism.regime_adaptive_v436
+          python -m prism.seed_b_v445
+          python -m prism.technical_quality_v450
+          python -m prism.strategy_consolidation_v457
+      - name: Run combined Seed A/B audit
+        run: python -m prism.seed_ab_audit_v459
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v459-seed-ab-audit
+          path: results/prism-v459/
+          if-no-files-found: warn
