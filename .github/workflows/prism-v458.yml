@@ -1,0 +1,25 @@
+name: PRISM v4.58 HTML Scanner
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Generate opportunity report
+        run: python -m prism.live_scanner_v458
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-v458-html-report
+          path: results/prism-v458/
+          if-no-files-found: warn
