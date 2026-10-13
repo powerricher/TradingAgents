@@ -30,8 +30,13 @@ def main():
  a=a[a.variant=="ATR4_CONTROL"].copy();a["seed"]="A"
  b=pd.read_csv("results/prism-v445/candidate_exits.csv")
  b=b[b.detector=="VCP_BREAKOUT"].copy();b["seed"]="B"
- required={"ticker","entry_date","entry_price","exit_price"}
- if any(not required.issubset(x) for x in (a,b,trades)):raise RuntimeError("Missing historical input columns")
+ candidate_required={"ticker","entry_date","entry_price","exit_price"}
+ trade_required={"seed","ticker","entry_date","pnl","terminal_mark"}
+ for label,frame in (("Seed A candidates",a),("Seed B candidates",b)):
+  missing_cols=candidate_required-set(frame.columns)
+  if missing_cols:raise RuntimeError(label+" missing columns: "+str(sorted(missing_cols)))
+ missing_trade=trade_required-set(trades.columns)
+ if missing_trade:raise RuntimeError("Trade audit missing columns: "+str(sorted(missing_trade)))
  candidates=pd.concat([a,b],ignore_index=True)
  candidates=candidates.drop_duplicates(["seed","ticker","entry_date"])
  prices={};errors=[]
