@@ -5,7 +5,8 @@ import json,html
 from pathlib import Path
 import numpy as np,pandas as pd
 from .universe_v445 import UNIVERSE
-from .trend_v48 import load_prices,portfolio,STOP_SLIPPAGE
+from .trend_v48 import load_prices,STOP_SLIPPAGE
+from .recovery_portfolio_v462_fix import portfolio_same_day
 from .trend_v47 import atr
 from .atr_frontier_v433 import CUTOFF
 MODES=("BASIC","HIGHER_LOW","MOMENTUM")
@@ -103,7 +104,9 @@ def main():
    "Entry-session stop touch uses daily OHLC and modeled 20bps stress; gaps can exceed stop.",
    "Terminal mark-to-market is synthetic, not a realized exit.",
    "Retrospective universe and repeated 2022-26 research invalidate independent OOS claims.",
-   "No live trading, alerts, new capital allocation or automatic promotion."]}
+   "No live trading, alerts, new capital allocation or automatic promotion.",
+   "Same-day entry/stop exits use next-open entry and daily low with 20bps modeled stress.",
+   "All nine strategies must validate; otherwise the workflow fails hard."]}
  ledgers=[];curves=[]
  for entry_mode in MODES:
   for exit_mode in EXITS:
@@ -114,13 +117,18 @@ def main():
    records=[{"ticker":r.ticker,"entry_date":r.entry_date,"exit_date":r.exit_date,
      "entry_price":r.entry_price,"exit_price":r.exit_price,"edge":r.edge,"reason":r.reason}
      for r in z.itertuples(index=False)]
-   try:perf,ledger,curve=portfolio(records,prices,name,rotation=False)
+   try:perf,ledger,curve=portfolio_same_day(records,prices,name)
    except Exception as e:
     report["strategies"][name]={"status":"INVALID","error":str(e)};continue
    report["strategies"][name]={**perf,"candidates":len(z)}
    for r in ledger:r["strategy"]=name
    for r in curve:r["strategy"]=name
    ledgers+=ledger;curves+=curve
+ if any("status" in x and x["status"]=="INVALID" for x in report["strategies"].values()):
+  (out/"summary.json").write_text(json.dumps(report,ensure_ascii=False,indent=2))
+  raise RuntimeError("INVALID strategy: recovery comparison cannot be accepted")
+ if len(report["strategies"])!=9 or any("return" not in x for x in report["strategies"].values()):
+  raise RuntimeError("Incomplete nine-strategy frontier")
  pd.DataFrame(ledgers).to_csv(out/"ledger.csv",index=False)
  pd.DataFrame(curves).to_csv(out/"daily_equity.csv",index=False)
  (out/"summary.json").write_text(json.dumps(report,ensure_ascii=False,indent=2))
