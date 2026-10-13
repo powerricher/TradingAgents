@@ -5,6 +5,7 @@ on:
     branches: [prism-m1]
     paths:
       - 'prism/recovery_50200_v462.py'
+      - 'prism/recovery_portfolio_v462_fix.py'
       - '.github/workflows/prism-v462.yml'
 permissions:
   contents: read
