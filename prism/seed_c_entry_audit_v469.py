@@ -24,9 +24,12 @@ def main():
  l["entry_year"]=pd.to_datetime(l.entry_date).dt.year
  l["same_day"]=l.entry_date==l.exit_date
  detail=l.merge(c[["ticker","entry_date","exit_date","entry_price","exit_price","gross_return","reason"]],
-  on=["ticker","entry_date","exit_date"],how="left",validate="one_to_one",indicator=True)
+  on=["ticker","entry_date","exit_date"],how="left",validate="one_to_one",indicator=True,suffixes=("_ledger","_candidate"))
  if (detail["_merge"]!="both").any():raise RuntimeError("Ledger/candidate mismatch")
- detail=detail.drop(columns="_merge")
+ if not detail["reason_ledger"].fillna("").eq(detail["reason_candidate"].fillna("")).all():
+  raise RuntimeError("Ledger and candidate exit reasons disagree")
+ detail["reason"]=detail["reason_ledger"]
+ detail=detail.drop(columns=["_merge","reason_ledger","reason_candidate"])
  detail=detail.merge(s[["ticker","entry_date","signal_close","signal_rvol","prior_dollar_volume","prior_atr_pct"]],
   on=["ticker","entry_date"],how="left",validate="one_to_one")
  if detail.signal_close.isna().any():raise RuntimeError("Signal feature join failed")
