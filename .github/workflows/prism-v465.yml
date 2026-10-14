@@ -1,0 +1,40 @@
+name: PRISM v4.65 TECH200 Selection Audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [prism-m1]
+    paths:
+      - 'prism/tech200_selection_audit_v465.py'
+      - '.github/workflows/prism-v465.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy
+      - name: Rebuild frozen Seed A and TECH200 Seed B inputs
+        run: |
+          python -m prism.entry_v413
+          python -m prism.replay_v414
+          python -m prism.ranking_v417
+          python -m prism.price_action_v419
+          python -m prism.vcp_v420
+          python -m prism.regime_adaptive_v436
+          python -m prism.tech200_expansion_v464
+      - name: Audit TECH200 candidate displacement and Seed A expansion feasibility
+        run: python -m prism.tech200_selection_audit_v465
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-v465-tech200-selection-audit
+          path: results/prism-v465/
+          if-no-files-found: error
