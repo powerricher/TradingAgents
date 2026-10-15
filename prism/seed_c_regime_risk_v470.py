@@ -84,7 +84,7 @@ def main():
   raise RuntimeError("Missing prior-close QQQ regime")
  z["edge"]=z["edge"].astype(float)
  records=z[["ticker","entry_date","exit_date","entry_price","exit_price","edge","reason","entry_regime"]].to_dict("records")
- dates=sorted(pd.to_datetime(ref.date).dt.normalize().unique())
+ dates=sorted(pd.Timestamp(x) for x in pd.to_datetime(ref.date).dt.normalize().unique())
  report={"version":"v4.70","status":"FROZEN_C1_RISK_AND_REGIME_RESEARCH_NOT_OOS",
   "candidate_regime_counts":z.entry_regime.value_counts().to_dict(),
   "strategies":{},"limitations":[
