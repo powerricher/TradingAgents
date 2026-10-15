@@ -25,11 +25,11 @@ jobs:
           python -m prism.seed_c_execution_v468
       - name: Rebuild C1 multi-position baseline v4.71
         run: python -m prism.seed_c_multi_position_v471
-      - name: Audit C1 signal density and idle capital v4.72
-        run: python -m prism.seed_c_capital_audit_v472
+      - name: Compare C1 isolated signal expansions v4.73
+        run: python -m prism.seed_c_signal_expansion_v473
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: prism-seed-c-v472
-          path: results/prism-v472/
+          name: prism-seed-c-v473
+          path: results/prism-v473/
           if-no-files-found: error
