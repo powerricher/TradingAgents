@@ -27,11 +27,13 @@ jobs:
         run: python -m prism.seed_c_multi_position_v471
       - name: Rebuild C1 expansion reference v4.73
         run: python -m prism.seed_c_signal_expansion_v473
-      - name: Audit expanded C1 quality ranking v4.74
+      - name: Rebuild expanded C1 quality ranking v4.74
         run: python -m prism.seed_c_quality_selection_v474
+      - name: Audit C1 historical robustness v4.75
+        run: python -m prism.seed_c_robustness_v475
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: prism-seed-c-v474
-          path: results/prism-v474/
+          name: prism-seed-c-v475
+          path: results/prism-v475/
           if-no-files-found: error
