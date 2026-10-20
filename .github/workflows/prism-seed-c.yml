@@ -32,6 +32,7 @@ jobs:
       # Re-run v4.75 with the same research rules; no strategy changes.
       - name: Audit C1 historical robustness v4.75
         run: python -m prism.seed_c_robustness_v475
+      # v4.76 baseline replay uses original signal RVOL ranking.
       - name: Evaluate regime-gated C1 challenger v4.76
         run: python -m prism.seed_c_regime_gate_v476
       - uses: actions/upload-artifact@v4
