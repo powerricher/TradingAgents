@@ -16,9 +16,9 @@ def main():
     reference=pd.read_csv("results/prism-v474/daily_equity.csv")
     prior=json.loads(Path("results/prism-v474/summary.json").read_text())
     market=regimes(pd.Timestamp("2022-01-01"))
-    candidates["entry_date"]=pd.to_datetime(candidates.entry_date).dt.normalize()
+    candidates["entry_date"]=pd.to_datetime(candidates.entry_date).dt.strftime("%Y-%m-%d")
     candidates["is_base"]=candidates.is_base.astype(bool)
-    candidates["regime"]=candidates.entry_date.map(market)
+    candidates["regime"]=pd.to_datetime(candidates.entry_date).map(market)
     if candidates.regime.isna().any() or (candidates.regime=="UNKNOWN").any():
         raise RuntimeError("Missing prior-close market regime")
     # Frozen, explicit hypothesis: always preserve BASE; allow new compression
@@ -29,7 +29,7 @@ def main():
     selected.to_csv(out/"candidate_decisions.csv",index=False)
     baseline=reference[reference.strategy=="BASE_RVOL"].sort_values("date")
     if baseline.empty:raise RuntimeError("Missing baseline")
-    dates=list(pd.to_datetime(baseline.date).dt.normalize())
+    dates=[pd.Timestamp(x) for x in pd.to_datetime(baseline.date).dt.normalize().unique()]
     prices={t:load_prices(t,"2021-01-01").loc[lambda x:x.index<=CUTOFF] for t in candidates.ticker.unique()}
     report={"version":"v4.76","status":"HISTORICAL_CHALLENGER_NOT_OOS",
             "rule":"Preserve all BASE; exclude expansion-only entries when prior-close QQQ regime is BEAR",
@@ -41,7 +41,7 @@ def main():
             "Portfolio simulation is authoritative, not standalone candidate gross returns.",
             "No live trading or automatic promotion."]}
     ledgers=[];curves=[]
-    policies={"BASE_RVOL":candidates[candidates.is_base].assign(rank_score=lambda x:x.signal_rvol),
+    policies={"BASE_RVOL":candidates[candidates.is_base].assign(rank_score=lambda x:x.edge),
               "EXPANDED_BASE_PRIORITY":candidates.assign(rank_score=1000*candidates.is_base.astype(int)+candidates.quality_score),
               "V476_REGIME_GATE":selected}
     for name,z in policies.items():
