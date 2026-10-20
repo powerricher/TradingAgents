@@ -17,12 +17,13 @@ def main():
     prior=json.loads(Path("results/prism-v474/summary.json").read_text())
     market=regimes(pd.Timestamp("2022-01-01"))
     candidates["entry_date"]=pd.to_datetime(candidates.entry_date).dt.normalize()
+    candidates["is_base"]=candidates.is_base.astype(bool)
     candidates["regime"]=candidates.entry_date.map(market)
     if candidates.regime.isna().any() or (candidates.regime=="UNKNOWN").any():
         raise RuntimeError("Missing prior-close market regime")
     # Frozen, explicit hypothesis: always preserve BASE; allow new compression
     # signals only outside BEAR. No fitted threshold or future outcomes.
-    candidates["eligible"]=candidates.is_base.astype(bool) | (candidates.regime!="BEAR")
+    candidates["eligible"]=candidates.is_base | (candidates.regime!="BEAR")
     selected=candidates[candidates.eligible].copy()
     selected["rank_score"]=1000*selected.is_base.astype(int)+selected.quality_score
     selected.to_csv(out/"candidate_decisions.csv",index=False)
@@ -40,7 +41,7 @@ def main():
             "Portfolio simulation is authoritative, not standalone candidate gross returns.",
             "No live trading or automatic promotion."]}
     ledgers=[];curves=[]
-    policies={"BASE_RVOL":candidates[candidates.is_base.astype(bool)].assign(rank_score=lambda x:x.edge),
+    policies={"BASE_RVOL":candidates[candidates.is_base].assign(rank_score=lambda x:x.signal_rvol),
               "EXPANDED_BASE_PRIORITY":candidates.assign(rank_score=1000*candidates.is_base.astype(int)+candidates.quality_score),
               "V476_REGIME_GATE":selected}
     for name,z in policies.items():
