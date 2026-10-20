@@ -32,9 +32,11 @@ jobs:
       # Re-run v4.75 with the same research rules; no strategy changes.
       - name: Audit C1 historical robustness v4.75
         run: python -m prism.seed_c_robustness_v475
+      - name: Evaluate regime-gated C1 challenger v4.76
+        run: python -m prism.seed_c_regime_gate_v476
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: prism-seed-c-v475
-          path: results/prism-v475/
+          name: prism-seed-c-v476
+          path: results/prism-v476/
           if-no-files-found: error
