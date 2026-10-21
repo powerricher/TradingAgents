@@ -23,9 +23,13 @@ jobs:
       - run: pip install . scikit-learn yfinance pandas numpy requests
       - name: Discover 2500 names and bearish signals
         run: python -m prism.seed_c_discovery_v479
+      - name: Evaluate bearish regime robustness v4.80
+        run: python -m prism.seed_d_robustness_v480
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: prism-bear-2500-v479
-          path: results/prism-v479/
+          name: prism-bear-2500-v480
+          path: |
+            results/prism-v479/
+            results/prism-v480/
           if-no-files-found: warn
