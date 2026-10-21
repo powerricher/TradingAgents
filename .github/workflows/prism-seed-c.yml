@@ -49,11 +49,14 @@ jobs:
           python -m prism.strategy_consolidation_v457
       - name: Audit independent A/B/C sleeves v4.77
         run: python -m prism.seed_abc_audit_v477
+      - name: Evaluate lagged ABC capital allocation v4.78
+        run: python -m prism.seed_abc_allocation_v478
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: prism-seed-abc-v477
+          name: prism-seed-abc-v478
           path: |
             results/prism-v476/
             results/prism-v477/
+            results/prism-v478/
           if-no-files-found: error
