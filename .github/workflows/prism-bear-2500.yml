@@ -1,0 +1,31 @@
+name: PRISM v4.79 Bear Discovery 2500
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prism-bear-2500.yml'
+permissions:
+  contents: read
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      PRISM_UNIVERSE_SIZE: '2500'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy requests
+      - name: Discover 2500 names and bearish signals
+        run: python -m prism.seed_c_discovery_v479
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-bear-2500-v479
+          path: results/prism-v479/
+          if-no-files-found: warn
