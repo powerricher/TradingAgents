@@ -56,8 +56,14 @@ def indicators(d):
  c2=(gap>=.07)&(ret>=.07)&(rvol>=2.5)&(c>=l+.7*(h-l))
  c3=(ret.shift(1)>=.08)&(rvol.shift(1)>=2)&(c>prev)&(c>=l+.6*(h-l))
  eligible=(prev>=5)&(dollar>=20_000_000)&(atrpct.shift(1)>=.04)
+ low20=l.shift(1).rolling(20).min()
+ ma50=c.shift(1).rolling(50).mean()
+ d1=(c<low20)&(rvol>=1.8)&(ret<-.03)&(c<ma50)
+ d3=(ret.shift(1)<-.08)&(c>prev)&(c>=l+.7*(h-l))&(rvol>=1.5)
  return {"C1_VOL_EXPANSION":c1&eligible,"C2_GAP_PIVOT_PROXY":c2&eligible,
-         "C3_SECOND_DAY":c3&eligible},dollar,atrpct,rvol
+         "C3_SECOND_DAY":c3&eligible,
+         "D1_SHORT_BREAKDOWN_PROXY":d1&eligible,
+         "D3_OVERSOLD_LONG_PROXY":d3&eligible},dollar,atrpct,rvol
 def main():
  out=Path("results/prism-v479");out.mkdir(parents=True,exist_ok=True)
  names,total=universe()
@@ -90,9 +96,9 @@ def main():
        "prior_dollar_volume":float(dollar.iloc[i]),"prior_atr_pct":float(atrpct.iloc[i-1])}
       for n in HORIZONS:
        sub=d.iloc[i+1:i+2+n]
-       row[f"ret_{n}"]=float(d.Close.iloc[i+1+n]/ep-1)
-       row[f"mae_{n}"]=float(sub.Low.min()/ep-1)
-       row[f"mfe_{n}"]=float(sub.High.max()/ep-1)
+       row[f"ret_{n}"]=float((ep/d.Close.iloc[i+1+n]-1) if name.startswith("D1_SHORT") else (d.Close.iloc[i+1+n]/ep-1))
+       row[f"mae_{n}"]=float((ep/sub.High.max()-1) if name.startswith("D1_SHORT") else (sub.Low.min()/ep-1))
+       row[f"mfe_{n}"]=float((ep/sub.Low.min()-1) if name.startswith("D1_SHORT") else (sub.High.max()/ep-1))
       signals.append(row)
    except Exception as e:errors.append({"ticker":t,"error":str(e)})
   print("processed",min(batchstart+25,len(names)),"of",len(names),flush=True)
@@ -111,6 +117,8 @@ def main():
  "Signal at close, next open entry; daily OHLC only; no intraday confirmation.",
  "D+1/3/5 returns and MAE/MFE are independent candidate outcomes, not executable stop fills.",
  "No portfolio compounding, fees, capital occupancy, stop loss or profit target yet.",
+ "D1 short returns are unlevered inverse price proxies, not executable borrow-adjusted short P&L.",
+ "D3 is long oversold rebound; D2 and D4 are not implemented in this discovery stage.",
  "No trading, alert, or automatic strategy promotion."]}
  for name,g in df.groupby("detector"):
   summary["detectors"][name]={"signals":len(g),"tickers":int(g.ticker.nunique()),
