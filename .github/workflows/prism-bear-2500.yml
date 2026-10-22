@@ -25,11 +25,14 @@ jobs:
         run: python -m prism.seed_c_discovery_v479
       - name: Evaluate bearish regime robustness v4.80
         run: python -m prism.seed_d_robustness_v480
+      - name: Replay Seed D3 BEAR portfolio v4.81
+        run: python -m prism.seed_d_portfolio_v481
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: prism-bear-2500-v480
+          name: prism-bear-2500-v481
           path: |
             results/prism-v479/
             results/prism-v480/
+            results/prism-v481/
           if-no-files-found: warn
