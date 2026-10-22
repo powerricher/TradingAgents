@@ -1,0 +1,29 @@
+name: PRISM v4.82 D4 Inverse ETF
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prism-d4-inverse.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . pandas numpy yfinance
+      - name: Replay D4 inverse ETF portfolio v4.82
+        run: python -m prism.seed_d_inverse_etf_v482
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-d4-v482
+          path: results/prism-v482/
+          if-no-files-found: error
