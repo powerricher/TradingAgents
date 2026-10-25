@@ -53,6 +53,8 @@ jobs:
         run: python -m prism.seed_abc_allocation_v478
       - name: Explore C4 sequential moving-average reclaim
         run: python -m prism.seed_c_ma_reclaim_c4
+      - name: Evaluate C4 sequential moving-average breakout
+        run: python -m prism.seed_c_sequential_ma_c4
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -61,5 +63,6 @@ jobs:
             results/prism-v476/
             results/prism-v477/
             results/prism-v478/
+            results/prism-c4/
             results/prism-c4-ma-reclaim/
           if-no-files-found: error
