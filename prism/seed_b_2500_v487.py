@@ -39,8 +39,6 @@ def main():
      close=d.Close.astype(float)
      ma50=close.iloc[i-49:i+1].mean()
      ma200=close.iloc[i-199:i+1].mean()
-     for h in (5,20,60):
-      pass
      rows.append({"ticker":t,"detector":detector,"signal_date":str(day.date()),
        "entry_date":str(d.index[i+1].date()),"edge":float(edge),
        "signal_rvol":float(v.iloc[i]/prior) if prior>0 else np.nan,
