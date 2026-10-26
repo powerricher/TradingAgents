@@ -21,9 +21,13 @@ jobs:
       - run: pip install . pandas numpy yfinance
       - name: Replay D4 inverse ETF portfolio v4.82
         run: python -m prism.seed_d_inverse_etf_v482
+      - name: Audit D4 annual and tail robustness v4.84
+        run: python -m prism.seed_d_robustness_v484
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: prism-d4-v482
-          path: results/prism-v482/
+          name: prism-d4-v484
+          path: |
+            results/prism-v482/
+            results/prism-v484/
           if-no-files-found: error
