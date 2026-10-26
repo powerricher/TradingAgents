@@ -33,9 +33,13 @@ jobs:
           python -m prism.strategy_consolidation_v457
       - name: Audit A/B concentration and annual performance v4.85
         run: python -m prism.seed_ab_quality_v485
+      - name: Analyze A/B trade fragility v4.86
+        run: python -m prism.seed_ab_fragility_v486
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: prism-ab-v485
-          path: results/prism-v485/
+          name: prism-ab-v486
+          path: |
+            results/prism-v485/
+            results/prism-v486/
           if-no-files-found: error
