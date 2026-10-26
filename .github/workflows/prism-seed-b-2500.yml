@@ -1,0 +1,33 @@
+name: PRISM v4.87 Seed B 2500
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prism-seed-b-2500.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      PRISM_UNIVERSE_SIZE: '2500'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prism-m1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install . scikit-learn yfinance pandas numpy requests
+      - name: Rebuild 2500 ticker snapshot
+        run: python -m prism.seed_c_discovery_v479
+      - name: Scan Seed B VCP and BCH candidates with frozen rules
+        run: python -m prism.seed_b_2500_v487
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-seed-b-v487
+          path: results/prism-v487/
+          if-no-files-found: error
